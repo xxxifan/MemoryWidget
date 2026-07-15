@@ -1,0 +1,33 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <PropertyGroup>
+    <ProjectGuid>{8F5B8B45-E4CD-4A24-8F35-7C4C7483F5CC}</ProjectGuid>
+    <OutputType>AppContainerExe</OutputType>
+    <TargetPlatformVersion>10.0.19041.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <DefaultLanguage>zh-CN</DefaultLanguage>
+    <EntryPointProjectUniqueName>..\MemoryWidgetProvider\MemoryWidgetProvider.csproj</EntryPointProjectUniqueName>
+    <AppxBundle>Never</AppxBundle>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MemoryWidgetProvider\MemoryWidgetProvider.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.1">
+      <IncludeAssets>build</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+</Project>
