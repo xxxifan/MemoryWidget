@@ -23,6 +23,13 @@ if (-not (Test-Path $CertificatePath)) {
     throw "未找到证书：$CertificatePath"
 }
 
+$packageName = "MemoryWidgetProvider.Package"
+$existing = Get-AppxPackage -Name $packageName -ErrorAction SilentlyContinue
+if ($existing) {
+    Write-Host "卸载旧版本 $($existing.PackageFullName)..." -ForegroundColor Yellow
+    Remove-AppxPackage -Package $existing.PackageFullName
+}
+
 Write-Host "导入证书到 LocalMachine\\TrustedPeople..." -ForegroundColor Cyan
 Import-Certificate -FilePath $CertificatePath -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" | Out-Null
 

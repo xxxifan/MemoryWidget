@@ -81,9 +81,17 @@ New-PlaceholderPng -Path (Join-Path $imagesOut "Square44x44Logo.png") -Width 44 
 New-PlaceholderPng -Path (Join-Path $imagesOut "Square150x150Logo.png") -Width 150 -Height 150 -Label "MEM"
 New-PlaceholderPng -Path (Join-Path $imagesOut "Wide310x150Logo.png") -Width 310 -Height 150 -Label "MEMORY"
 New-PlaceholderPng -Path (Join-Path $assetsOut "Memory_Icon.png") -Width 128 -Height 128 -Label "RAM"
-New-PlaceholderPng -Path (Join-Path $assetsOut "Memory_Screenshot.png") -Width 480 -Height 288 -Label "Memory Widget"
+New-PlaceholderPng -Path (Join-Path $assetsOut "Memory_Screenshot.png") -Width 748 -Height 748 -Label "Memory Widget"
 
-$sdkRoot = Join-Path $env:USERPROFILE ".nuget\packages\microsoft.windows.sdk.buildtools\10.0.26100.4654\bin\10.0.26100.0\x64"
+$sdkToolsBase = Join-Path $env:USERPROFILE ".nuget\packages\microsoft.windows.sdk.buildtools"
+$sdkVersion = Get-ChildItem $sdkToolsBase -Directory -ErrorAction Stop |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+if (-not $sdkVersion) { throw "未在 NuGet 缓存中找到 microsoft.windows.sdk.buildtools，请先执行 dotnet restore。" }
+$sdkBinRoot = Get-ChildItem (Join-Path $sdkVersion.FullName "bin") -Directory |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+$sdkRoot = Join-Path $sdkBinRoot.FullName "x64"
 $makeAppx = Join-Path $sdkRoot "makeappx.exe"
 $signTool = Join-Path $sdkRoot "signtool.exe"
 
