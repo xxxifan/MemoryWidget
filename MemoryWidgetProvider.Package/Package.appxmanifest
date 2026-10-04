@@ -13,7 +13,7 @@
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>Memory Widget Provider</DisplayName>
+    <DisplayName>内存清理</DisplayName>
     <PublisherDisplayName>Memory Widget Provider</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
@@ -36,7 +36,7 @@
       Executable="MemoryWidgetProvider\MemoryWidgetProvider.exe"
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Memory Widget Provider"
+        DisplayName="内存清理"
         Description="Windows 11 内存占用小组件"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
@@ -54,7 +54,7 @@
         </com:Extension>
 
         <uap3:Extension Category="windows.appExtension">
-          <uap3:AppExtension Name="com.microsoft.windows.widgets" DisplayName="Memory Widget Provider" Id="MemoryWidgetProvider" PublicFolder="Public">
+          <uap3:AppExtension Name="com.microsoft.windows.widgets" DisplayName="内存清理" Id="MemoryWidgetProvider" PublicFolder="Public">
             <uap3:Properties>
               <WidgetProvider>
                 <ProviderIcons>
@@ -69,7 +69,7 @@
                   <TrustedPackageFamilyName>Microsoft.WidgetsPlatformRuntime_8wekyb3d8bbwe</TrustedPackageFamilyName>
                 </TrustedPackageFamilyNames>
                 <Definitions>
-                  <Definition Id="Memory_Usage_Widget" DisplayName="内存占用率" Description="查看系统内存实时占用" AllowMultiple="true">
+                  <Definition Id="Memory_Usage_Widget" DisplayName="内存清理" Description="查看内存实时占用，一键清理内存" AllowMultiple="true">
                     <Capabilities>
                       <Capability>
                         <Size Name="small" />
@@ -83,10 +83,18 @@
                         <Icon Path="ProviderAssets\Memory_Icon.png" />
                       </Icons>
                       <Screenshots>
-                        <Screenshot Path="ProviderAssets\Memory_Screenshot.png" DisplayAltText="内存占用率小组件预览" />
+                        <Screenshot Path="ProviderAssets\Memory_Screenshot_Dark.png" DisplayAltText="内存清理小组件预览" />
                       </Screenshots>
-                      <DarkMode />
-                      <LightMode />
+                      <DarkMode>
+                        <Screenshots>
+                          <Screenshot Path="ProviderAssets\Memory_Screenshot_Dark.png" DisplayAltText="内存清理小组件预览" />
+                        </Screenshots>
+                      </DarkMode>
+                      <LightMode>
+                        <Screenshots>
+                          <Screenshot Path="ProviderAssets\Memory_Screenshot_Light.png" DisplayAltText="内存清理小组件预览" />
+                        </Screenshots>
+                      </LightMode>
                     </ThemeResources>
                   </Definition>
                 </Definitions>

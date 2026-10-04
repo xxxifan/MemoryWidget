@@ -42,7 +42,7 @@
 
 脚本会自动将证书导入 `LocalMachine\TrustedPeople` 和 `LocalMachine\Root`，然后安装 MSIX。
 
-安装后按 `Win + W` 打开小组件面板，点击"添加小组件"找到"内存占用率"并固定即可。
+安装后按 `Win + W` 打开小组件面板，点击"添加小组件"找到"内存清理"并固定即可。
 
 ## 项目结构
 
@@ -55,10 +55,14 @@ MemoryWidgetProvider/
 └── FactoryHelper.cs         # COM 工厂辅助
 
 MemoryWidgetProvider.Package/
-└── Package.appxmanifest     # MSIX 清单
+├── Package.appxmanifest     # MSIX 清单
+├── AssetsSource/assets.html # 图标与预览图源文件
+├── Images/                  # 应用包图标
+└── ProviderAssets/          # 小组件图标与选择器预览图
 
 scripts/
 ├── build-dev-msix.ps1       # 编译 + 打包 + 签名
+├── export-assets.ps1        # 从 assets.html 导出图标与预览图
 └── install-dev-msix.ps1     # 证书导入 + 侧载安装
 ```
 

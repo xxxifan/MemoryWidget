@@ -41,8 +41,10 @@ if (Test-Path $publicFolderSource) {
     Copy-Item (Join-Path $publicFolderSource '*') $publicOut -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "3/5 生成占位图标资源..." -ForegroundColor Cyan
+Write-Host "3/5 准备图标资源..." -ForegroundColor Cyan
 Add-Type -AssemblyName System.Drawing
+$imagesSource = Join-Path $repoRoot "MemoryWidgetProvider.Package\Images"
+$assetsSource = Join-Path $repoRoot "MemoryWidgetProvider.Package\ProviderAssets"
 
 function New-PlaceholderPng {
     param(
@@ -76,12 +78,33 @@ function New-PlaceholderPng {
     $bitmap.Dispose()
 }
 
-New-PlaceholderPng -Path (Join-Path $imagesOut "StoreLogo.png") -Width 50 -Height 50 -Label "MEM"
-New-PlaceholderPng -Path (Join-Path $imagesOut "Square44x44Logo.png") -Width 44 -Height 44 -Label "M"
-New-PlaceholderPng -Path (Join-Path $imagesOut "Square150x150Logo.png") -Width 150 -Height 150 -Label "MEM"
-New-PlaceholderPng -Path (Join-Path $imagesOut "Wide310x150Logo.png") -Width 310 -Height 150 -Label "MEMORY"
-New-PlaceholderPng -Path (Join-Path $assetsOut "Memory_Icon.png") -Width 128 -Height 128 -Label "RAM"
-New-PlaceholderPng -Path (Join-Path $assetsOut "Memory_Screenshot.png") -Width 748 -Height 748 -Label "Memory Widget"
+# 优先使用仓库内由 scripts\export-assets.ps1 导出的资源，缺失时生成占位图
+function Copy-AssetOrPlaceholder {
+    param(
+        [string]$SourceDir,
+        [string]$OutDir,
+        [string]$Name,
+        [int]$Width,
+        [int]$Height,
+        [string]$Label
+    )
+
+    $source = Join-Path $SourceDir $Name
+    if (Test-Path $source) {
+        Copy-Item $source (Join-Path $OutDir $Name) -Force
+    } else {
+        Write-Warning "缺少 $source，使用占位图。"
+        New-PlaceholderPng -Path (Join-Path $OutDir $Name) -Width $Width -Height $Height -Label $Label
+    }
+}
+
+Copy-AssetOrPlaceholder $imagesSource $imagesOut "StoreLogo.png" 50 50 "MEM"
+Copy-AssetOrPlaceholder $imagesSource $imagesOut "Square44x44Logo.png" 44 44 "M"
+Copy-AssetOrPlaceholder $imagesSource $imagesOut "Square150x150Logo.png" 150 150 "MEM"
+Copy-AssetOrPlaceholder $imagesSource $imagesOut "Wide310x150Logo.png" 310 150 "MEMORY"
+Copy-AssetOrPlaceholder $assetsSource $assetsOut "Memory_Icon.png" 128 128 "RAM"
+Copy-AssetOrPlaceholder $assetsSource $assetsOut "Memory_Screenshot_Dark.png" 600 608 "Memory Widget"
+Copy-AssetOrPlaceholder $assetsSource $assetsOut "Memory_Screenshot_Light.png" 600 608 "Memory Widget"
 
 $sdkToolsBase = Join-Path $env:USERPROFILE ".nuget\packages\microsoft.windows.sdk.buildtools"
 $sdkVersion = Get-ChildItem $sdkToolsBase -Directory -ErrorAction Stop |

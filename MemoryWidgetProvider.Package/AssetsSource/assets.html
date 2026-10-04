@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Memory Widget 资源</title>
+<!-- 由 scripts/export-assets.ps1 通过 ?a=<资源名> 逐个导出 -->
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  body { font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", sans-serif; }
+  svg.full { display: block; width: 100%; height: 100%; }
+
+  .wide { display: flex; align-items: center; justify-content: center; gap: 14px; height: 100%; }
+  .wide svg { width: 76px; height: 76px; }
+  .wide span { font-size: 28px; font-weight: 700; color: #fff; }
+
+  /* ---------- 中尺寸小组件预览（300x304 有效像素，按 2 倍导出） ---------- */
+  .widget {
+    box-sizing: border-box; width: 100%; height: 100%;
+    padding: 12px 16px 16px; display: flex; flex-direction: column;
+    background: var(--bg); color: var(--fg);
+  }
+  .dark  { --bg: #2c2c2c; --fg: #ffffff; --sub: #c5c5c5; --track: rgba(255,255,255,.16); --btn: #4cc2ff; --btn-fg: #000000; }
+  .light { --bg: #f9f9f9; --fg: #1b1b1b; --sub: #5d5d5d; --track: rgba(0,0,0,.1);       --btn: #0067c0; --btn-fg: #ffffff; }
+  .w-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); height: 24px; }
+  .w-head svg { width: 16px; height: 16px; }
+  .w-head b { margin-left: auto; letter-spacing: 2px; font-size: 14px; }
+  .w-title { margin-top: 8px; font-size: 20px; font-weight: 700; }
+  .w-value { font-size: 28px; font-weight: 700; line-height: 1.25; }
+  .w-bar { height: 6px; border-radius: 3px; background: var(--track); margin: 6px 0 8px; overflow: hidden; }
+  .w-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #00B7C3, #0078D4, #8764B8, #E3008C); }
+  .w-line { font-size: 14px; line-height: 22px; }
+  .w-btn {
+    margin-top: auto; height: 36px; border-radius: 6px; background: var(--btn); color: var(--btn-fg);
+    display: grid; place-items: center; font-size: 14px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<script>
+  // 内存条图标：蓝紫渐变圆角底 + 白色内存条 + 右上角清理闪光
+  function icon(id) {
+    return `<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg${id}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0078D4"/><stop offset="1" stop-color="#7B5CFF"/>
+        </linearGradient>
+      </defs>
+      <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg${id})"/>
+      <rect x="40" y="92" width="176" height="78" rx="12" fill="#fff"/>
+      <rect x="58" y="108" width="40" height="32" rx="5" fill="#5B6CF0"/>
+      <rect x="108" y="108" width="40" height="32" rx="5" fill="#5B6CF0"/>
+      <rect x="158" y="108" width="40" height="32" rx="5" fill="#5B6CF0"/>
+      <path fill="#fff" d="M52 170h66v24h-66zM138 170h66v24h-66z"/>
+      <path fill="#5B6CF0" d="M60 180h8v14h-8zM76 180h8v14h-8zM92 180h8v14h-8zM146 180h8v14h-8zM162 180h8v14h-8zM178 180h8v14h-8zM194 180h4v14h-4zM108 180h4v14h-4z"/>
+      <path fill="#fff" d="M196 34c3 16 9 22 25 25-16 3-22 9-25 25-3-16-9-22-25-25 16-3 22-9 25-25z"/>
+    </svg>`;
+  }
+
+  function widget(theme) {
+    const percent = 45, gradientEnd = 75;
+    return `<div class="widget ${theme}">
+      <div class="w-head">${icon('h')}<span>内存清理</span><b>···</b></div>
+      <div class="w-title">内存占用率</div>
+      <div class="w-value">${percent}%</div>
+      <div class="w-bar"><i style="width:${percent}%;background-size:${gradientEnd / percent * 100}% 100%"></i></div>
+      <div class="w-line">已用 14.3 GiB / 31.8 GiB</div>
+      <div class="w-line">可用 17.5 GiB</div>
+      <div class="w-line">清理状态：未执行</div>
+      <div class="w-btn">清理内存</div>
+    </div>`;
+  }
+
+  // 无头 Edge 的视口有最小宽度，画布尺寸由 ?w=&h= 显式指定
+  const query = new URLSearchParams(location.search);
+  const asset = query.get('a') || 'icon';
+  document.documentElement.style.width = document.body.style.width = (query.get('w') || 256) + 'px';
+  document.documentElement.style.height = document.body.style.height = (query.get('h') || 256) + 'px';
+  if (asset === 'icon') {
+    document.body.innerHTML = icon('i').replace('<svg ', '<svg class="full" ');
+  } else if (asset === 'wide') {
+    document.body.innerHTML = `<div class="wide">${icon('w')}<span>内存清理</span></div>`;
+  } else {
+    document.body.innerHTML = widget(asset === 'light' ? 'light' : 'dark');
+  }
+</script>
+</body>
+</html>

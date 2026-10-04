@@ -39,4 +39,4 @@ Import-Certificate -FilePath $CertificatePath -CertStoreLocation "Cert:\LocalMac
 Write-Host "安装开发者 MSIX..." -ForegroundColor Cyan
 Add-AppxPackage -Path $MsixPath -ForceUpdateFromAnyVersion
 
-Write-Host "安装完成。可以按 Win + W 打开小组件面板并添加“内存占用率”。" -ForegroundColor Green
+Write-Host "安装完成。可以按 Win + W 打开小组件面板并添加“内存清理”。" -ForegroundColor Green

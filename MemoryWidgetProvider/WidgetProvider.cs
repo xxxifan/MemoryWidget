@@ -7,6 +7,13 @@ namespace MemoryWidgetProvider;
 
 internal sealed class WidgetProvider : IWidgetProvider
 {
+    // 小、中两套布局放在同一个模板里，按 $host.widgetSize 选择。
+    // 切换尺寸时宿主可以直接用已缓存的数据重新渲染，不必等 provider 回推新模板。
+    // 宿主每次收到数据都会重建整张卡片，图片异步解码会闪一下，因此只有进度条用图片，按钮用原生强调色按钮。
+    // 中尺寸：按钮以上的内容放进 height=stretch 的容器，吃掉剩余高度，让按钮沉到卡片底部；
+    //         拉伸后宿主不再保留底部内边距，末尾用一个空容器补出与左右一致的边距。
+    // 中尺寸的清理按钮用 accent 样式的 Container + selectAction 模拟全宽大按钮（原生 Action 无法调宽高，图片按钮刷新会闪）。
+    // 小尺寸：百分比与清理按钮并排，下面是进度条和已用/总量，整体垂直居中。
     private const string MemoryWidgetTemplate = """
         {
           "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -14,49 +21,160 @@ internal sealed class WidgetProvider : IWidgetProvider
           "version": "1.5",
           "body": [
             {
-              "type": "TextBlock",
-              "text": "内存占用率",
-              "size": "large",
-              "weight": "bolder",
-              "wrap": true
+              "type": "Container",
+              "$when": "${$host.widgetSize != 'small'}",
+              "height": "stretch",
+              "items": [
+                {
+                  "type": "Container",
+                  "height": "stretch",
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "内存占用率",
+                      "size": "large",
+                      "weight": "bolder",
+                      "wrap": true
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${memoryLoad}",
+                      "size": "extraLarge",
+                      "weight": "bolder",
+                      "color": "${memoryColor}",
+                      "wrap": true
+                    },
+                    {
+                      "type": "Image",
+                      "$when": "${$host.hostTheme == 'light'}",
+                      "url": "${progressLight}",
+                      "altText": "内存占用 ${memoryLoad}",
+                      "size": "stretch",
+                      "spacing": "small"
+                    },
+                    {
+                      "type": "Image",
+                      "$when": "${$host.hostTheme != 'light'}",
+                      "url": "${progressDark}",
+                      "altText": "内存占用 ${memoryLoad}",
+                      "size": "stretch",
+                      "spacing": "small"
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "已用 ${usedGiB} / ${totalGiB}",
+                      "wrap": true
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "可用 ${availableGiB}",
+                      "wrap": true
+                    },
+                    {
+                      "type": "TextBlock",
+                      "text": "${cleanStatus}",
+                      "spacing": "small",
+                      "wrap": true
+                    }
+                  ]
+                },
+                {
+                  "type": "Container",
+                  "style": "accent",
+                  "roundedCorners": true,
+                  "minHeight": "40px",
+                  "verticalContentAlignment": "center",
+                  "spacing": "medium",
+                  "selectAction": {
+                    "type": "Action.Execute",
+                    "title": "${cleanButtonTitle}",
+                    "verb": "clean_memory",
+                    "associatedInputs": "none"
+                  },
+                  "items": [
+                    {
+                      "type": "TextBlock",
+                      "text": "${cleanButtonTitle}",
+                      "weight": "bolder",
+                      "horizontalAlignment": "center"
+                    }
+                  ]
+                },
+                {
+                  "type": "Container",
+                  "minHeight": "12px",
+                  "spacing": "none",
+                  "items": []
+                }
+              ]
             },
             {
-              "type": "TextBlock",
-              "text": "${memoryLoad}",
-              "size": "extraLarge",
-              "weight": "bolder",
-              "wrap": true
-            },
-            {
-              "type": "TextBlock",
-              "text": "已用 ${usedGiB} / ${totalGiB}",
-              "wrap": true
-            },
-            {
-              "type": "TextBlock",
-              "text": "可用 ${availableGiB}",
-              "wrap": true
-            },
-            {
-              "type": "TextBlock",
-              "text": "更新时间 ${updatedAt}",
-              "isSubtle": true,
-              "spacing": "small",
-              "wrap": true
-            },
-            {
-              "type": "TextBlock",
-              "text": "${cleanStatus}",
-              "spacing": "small",
-              "wrap": true
-            }
-          ],
-          "actions": [
-            {
-              "type": "Action.Execute",
-              "title": "清理内存",
-              "verb": "clean_memory",
-              "associatedInputs": "none"
+              "type": "Container",
+              "$when": "${$host.widgetSize == 'small'}",
+              "height": "stretch",
+              "verticalContentAlignment": "center",
+              "items": [
+                {
+                  "type": "ColumnSet",
+                  "columns": [
+                    {
+                      "type": "Column",
+                      "width": "stretch",
+                      "verticalContentAlignment": "center",
+                      "items": [
+                        {
+                          "type": "TextBlock",
+                          "text": "${memoryLoad}",
+                          "size": "extraLarge",
+                          "weight": "bolder",
+                          "color": "${memoryColor}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Column",
+                      "width": "auto",
+                      "verticalContentAlignment": "center",
+                      "items": [
+                        {
+                          "type": "ActionSet",
+                          "actions": [
+                            {
+                              "type": "Action.Execute",
+                              "title": "${cleanButtonTitle}",
+                              "verb": "clean_memory",
+                              "style": "positive",
+                              "associatedInputs": "none"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "Image",
+                  "$when": "${$host.hostTheme == 'light'}",
+                  "url": "${progressLight}",
+                  "altText": "内存占用 ${memoryLoad}",
+                  "size": "stretch",
+                  "spacing": "default"
+                },
+                {
+                  "type": "Image",
+                  "$when": "${$host.hostTheme != 'light'}",
+                  "url": "${progressDark}",
+                  "altText": "内存占用 ${memoryLoad}",
+                  "size": "stretch",
+                  "spacing": "default"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "已用 ${usedGiB} / ${totalGiB}",
+                  "spacing": "default",
+                  "wrap": true
+                }
+              ]
             }
           ]
         }
@@ -199,16 +317,14 @@ internal sealed class WidgetProvider : IWidgetProvider
         {
             var widgetContext = contextChangedArgs.WidgetContext;
             ProviderLogger.Info($"OnWidgetContextChanged: id={widgetContext.Id}, size={widgetContext.Size}");
-            WidgetRuntimeState widgetState;
+            // 模板已按 $host.widgetSize 内置两套布局，切换尺寸由宿主用缓存数据直接重绘，
+            // 这里不再立即推送，避免同一份数据再渲染一次造成闪烁；数据交给定时刷新即可。
             lock (_syncRoot)
             {
-                widgetState = EnsureWidgetStateLocked(widgetContext);
+                var widgetState = EnsureWidgetStateLocked(widgetContext);
                 widgetState.IsActive = widgetContext.IsActive;
-                widgetState.ForceNextUpdate = true;
                 UpdateRefreshLoopLocked();
             }
-
-            QueueWidgetUpdate(widgetState);
         }
         catch (Exception ex)
         {
@@ -466,8 +582,10 @@ internal sealed class WidgetProvider : IWidgetProvider
                     continue;
                 }
 
+                var force = state.ForceNextUpdate;
                 state.ForceNextUpdate = false;
                 snapshot = state.Clone();
+                snapshot.ForceNextUpdate = force;
             }
 
             UpdateWidget(snapshot);
@@ -484,41 +602,62 @@ internal sealed class WidgetProvider : IWidgetProvider
         try
         {
             var snapshot = SystemMemoryReader.Read();
-            var payload = new WidgetPayload(
+            var payload = CreatePayload(
+                widgetInfo,
+                snapshot.UsedPercentage,
                 $"{snapshot.UsedPercentage}%",
                 FormatGiB(snapshot.TotalBytes),
                 FormatGiB(snapshot.UsedBytes),
                 FormatGiB(snapshot.AvailableBytes),
-                DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture),
                 widgetInfo.CleanupStatusText);
+
+            var data = JsonSerializer.Serialize(payload, JsonOptions);
+
+            // 宿主每次收到数据都会重建卡片，进度条图片会闪一下；数据没变就不推送
+            lock (_syncRoot)
+            {
+                if (!_runningWidgets.TryGetValue(widgetInfo.WidgetId, out var state)
+                    || (!widgetInfo.ForceNextUpdate && string.Equals(state.LastSentData, data, StringComparison.Ordinal)))
+                {
+                    return;
+                }
+            }
 
             var request = new WidgetUpdateRequestOptions(widgetInfo.WidgetId)
             {
                 Template = MemoryWidgetTemplate,
-                Data = JsonSerializer.Serialize(payload, JsonOptions),
+                Data = data,
                 CustomState = snapshot.UsedPercentage.ToString(CultureInfo.InvariantCulture)
             };
 
             WidgetManager.GetDefault().UpdateWidget(request);
+            SetLastSentData(widgetInfo.WidgetId, data);
         }
         catch (Exception ex)
         {
             ProviderLogger.Error($"UpdateWidget 失败: id={widgetInfo.WidgetId}", ex);
-            TrySendErrorWidget(widgetInfo.WidgetId);
+            SetLastSentData(widgetInfo.WidgetId, null);
+            TrySendErrorWidget(widgetInfo);
         }
     }
 
-    private void TrySendErrorWidget(string widgetId)
+    private void SetLastSentData(string widgetId, string? data)
     {
+        lock (_syncRoot)
+        {
+            if (_runningWidgets.TryGetValue(widgetId, out var state))
+            {
+                state.LastSentData = data;
+            }
+        }
+    }
+
+    private void TrySendErrorWidget(WidgetRuntimeState widgetInfo)
+    {
+        var widgetId = widgetInfo.WidgetId;
         try
         {
-            var payload = new WidgetPayload(
-                "N/A",
-                "N/A",
-                "N/A",
-                "N/A",
-                DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture),
-                "数据读取失败");
+            var payload = CreatePayload(widgetInfo, 0, "N/A", "N/A", "N/A", "N/A", "数据读取失败");
 
             var request = new WidgetUpdateRequestOptions(widgetId)
             {
@@ -535,10 +674,33 @@ internal sealed class WidgetProvider : IWidgetProvider
         }
     }
 
+    private static WidgetPayload CreatePayload(
+        WidgetRuntimeState widgetInfo,
+        int usedPercentage,
+        string memoryLoad,
+        string totalGiB,
+        string usedGiB,
+        string availableGiB,
+        string cleanStatus)
+    {
+        var level = WidgetVisuals.GetLevel(usedPercentage);
+        return new WidgetPayload(
+            memoryLoad,
+            WidgetVisuals.GetTextColor(level),
+            totalGiB,
+            usedGiB,
+            availableGiB,
+            cleanStatus,
+            widgetInfo.IsCleaning ? "清理中…" : "清理内存",
+            WidgetVisuals.CreateProgressBar(usedPercentage, level, isLightTheme: true),
+            WidgetVisuals.CreateProgressBar(usedPercentage, level, isLightTheme: false));
+    }
+
     private static string FormatGiB(ulong bytes)
     {
+        // 保留 1 位小数，减少数值抖动带来的推送次数
         var value = bytes / 1024d / 1024d / 1024d;
-        return $"{value:0.00} GiB";
+        return $"{value:0.0} GiB";
     }
 
     private static string FormatMiB(long bytes)
@@ -554,11 +716,14 @@ internal sealed class WidgetProvider : IWidgetProvider
 
     private sealed record WidgetPayload(
         string MemoryLoad,
+        string MemoryColor,
         string TotalGiB,
         string UsedGiB,
         string AvailableGiB,
-        string UpdatedAt,
-        string CleanStatus);
+        string CleanStatus,
+        string CleanButtonTitle,
+        string ProgressLight,
+        string ProgressDark);
 
     private sealed class WidgetRuntimeState
     {
@@ -577,6 +742,7 @@ internal sealed class WidgetProvider : IWidgetProvider
         public bool ForceNextUpdate { get; set; }
         public bool IsCleaning { get; set; }
         public string CleanupStatusText { get; set; }
+        public string? LastSentData { get; set; }
 
         public WidgetRuntimeState Clone()
         {
