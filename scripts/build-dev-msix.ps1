@@ -4,8 +4,9 @@ param(
     [ValidateSet("win-x64", "win-x86", "win-arm64")]
     [string]$Runtime = "win-x64",
     [string]$PackageVersion = "1.0.0.0",
-    [string]$CertificatePassword = "DevWidget@2026",
-    [switch]$NoNextStepHint
+    [switch]$NoNextStepHint,
+    # 强制生成新签名证书（已安装的用户需要重新导入证书）
+    [switch]$NewCertificate
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,7 +26,6 @@ $publicOut = Join-Path $stagingRoot "Public"
 $certOut = Join-Path $artifactsRoot "cert"
 $msixPath = Join-Path $artifactsRoot "MemoryWidgetProvider.Dev.msix"
 $cerPath = Join-Path $certOut "MemoryWidgetProvider.Dev.cer"
-$pfxPath = Join-Path $certOut "MemoryWidgetProvider.Dev.pfx"
 
 Remove-Item $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $providerOut, $imagesOut, $assetsOut, $publicOut, $certOut | Out-Null
@@ -132,24 +132,37 @@ Write-Host "4/5 打包 MSIX..." -ForegroundColor Cyan
 Remove-Item $msixPath -Force -ErrorAction SilentlyContinue
 & $makeAppx pack /d $stagingRoot /p $msixPath /o
 
-Write-Host "5/5 生成并应用开发者签名..." -ForegroundColor Cyan
-$cert = New-SelfSignedCertificate `
-    -Type Custom `
-    -Subject "CN=MemoryWidgetProvider" `
-    -KeyUsage DigitalSignature `
-    -FriendlyName "MemoryWidgetProvider Dev Cert" `
-    -CertStoreLocation "Cert:\CurrentUser\My" `
-    -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
+Write-Host "5/5 应用开发者签名..." -ForegroundColor Cyan
+# 复用本机已有的签名证书，已安装过的用户更新时无需重新导入；本机没有时（如用户自行构建）才生成新证书
+$cert = $null
+if (-not $NewCertificate) {
+    $cert = Get-ChildItem "Cert:\CurrentUser\My" -CodeSigningCert |
+        Where-Object { $_.Subject -eq "CN=MemoryWidgetProvider" -and $_.HasPrivateKey -and $_.NotAfter -gt (Get-Date).AddDays(30) } |
+        Sort-Object NotBefore -Descending |
+        Select-Object -First 1
+}
+if ($cert) {
+    Write-Host "复用已有证书 $($cert.Thumbprint)（有效期至 $($cert.NotAfter.ToString('yyyy-MM-dd'))）"
+} else {
+    Write-Host "生成新的开发者证书..."
+    $cert = New-SelfSignedCertificate `
+        -Type Custom `
+        -Subject "CN=MemoryWidgetProvider" `
+        -KeyUsage DigitalSignature `
+        -FriendlyName "MemoryWidgetProvider Dev Cert" `
+        -CertStoreLocation "Cert:\CurrentUser\My" `
+        -NotAfter (Get-Date).AddYears(10) `
+        -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
+}
 
-$securePassword = ConvertTo-SecureString -String $CertificatePassword -Force -AsPlainText
+# 私钥只留在当前用户证书库，直接按指纹签名，不导出 PFX；只导出公钥 .cer 供安装时信任
 Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
-Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $securePassword | Out-Null
-& $signTool sign /fd SHA256 /f $pfxPath /p $CertificatePassword $msixPath
+& $signTool sign /fd SHA256 /s My /sha1 $cert.Thumbprint $msixPath
+if ($LASTEXITCODE -ne 0) { throw "signtool 签名失败（退出码 $LASTEXITCODE）。" }
 
 Write-Host "开发者包构建完成。" -ForegroundColor Green
 Write-Host "MSIX: $msixPath"
 Write-Host "CER : $cerPath"
-Write-Host "PFX : $pfxPath"
 if (-not $NoNextStepHint) {
     Write-Host ""
     Write-Host "下一步（管理员 PowerShell）：" -ForegroundColor Yellow
