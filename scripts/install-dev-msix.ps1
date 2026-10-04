@@ -30,11 +30,9 @@ if ($existing) {
     Remove-AppxPackage -Package $existing.PackageFullName
 }
 
+# 侧载 MSIX 只需信任到「受信任的人」，不必放进受信任的根证书颁发机构
 Write-Host "导入证书到 LocalMachine\\TrustedPeople..." -ForegroundColor Cyan
 Import-Certificate -FilePath $CertificatePath -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" | Out-Null
-
-Write-Host "导入证书到 LocalMachine\\Root..." -ForegroundColor Cyan
-Import-Certificate -FilePath $CertificatePath -CertStoreLocation "Cert:\LocalMachine\Root" | Out-Null
 
 Write-Host "安装开发者 MSIX..." -ForegroundColor Cyan
 Add-AppxPackage -Path $MsixPath -ForceUpdateFromAnyVersion

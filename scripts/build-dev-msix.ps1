@@ -4,12 +4,14 @@ param(
     [ValidateSet("win-x64", "win-x86", "win-arm64")]
     [string]$Runtime = "win-x64",
     [string]$PackageVersion = "1.0.0.0",
-    [string]$CertificatePassword = "DevWidget@2026"
+    [string]$CertificatePassword = "DevWidget@2026",
+    [switch]$NoNextStepHint
 )
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Path $PSScriptRoot -Parent
+# 被 one-click-install.ps1 以脚本块方式执行时 $PSScriptRoot 为空，此时当前目录即仓库根目录
+$repoRoot = if ($PSScriptRoot) { Split-Path -Path $PSScriptRoot -Parent } else { (Get-Location).Path }
 $providerProject = Join-Path $repoRoot "MemoryWidgetProvider\MemoryWidgetProvider.csproj"
 $manifestSource = Join-Path $repoRoot "MemoryWidgetProvider.Package\Package.appxmanifest"
 $publicFolderSource = Join-Path $repoRoot "MemoryWidgetProvider.Package\Public"
@@ -30,10 +32,11 @@ New-Item -ItemType Directory -Force -Path $providerOut, $imagesOut, $assetsOut, 
 
 Write-Host "1/5 发布 Provider 二进制..." -ForegroundColor Cyan
 dotnet publish $providerProject -c $Configuration -r $Runtime --self-contained false -o $providerOut
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish 失败（退出码 $LASTEXITCODE）。" }
 
 Write-Host "2/5 准备 AppxManifest..." -ForegroundColor Cyan
 Copy-Item $manifestSource (Join-Path $stagingRoot "AppxManifest.xml") -Force
-[xml]$manifestXml = Get-Content (Join-Path $stagingRoot "AppxManifest.xml")
+[xml]$manifestXml = Get-Content -Raw -Encoding UTF8 (Join-Path $stagingRoot "AppxManifest.xml")
 $manifestXml.Package.Identity.Version = $PackageVersion
 $manifestXml.Save((Join-Path $stagingRoot "AppxManifest.xml"))
 
@@ -147,6 +150,8 @@ Write-Host "开发者包构建完成。" -ForegroundColor Green
 Write-Host "MSIX: $msixPath"
 Write-Host "CER : $cerPath"
 Write-Host "PFX : $pfxPath"
-Write-Host ""
-Write-Host "下一步（管理员 PowerShell）：" -ForegroundColor Yellow
-Write-Host ".\\scripts\\install-dev-msix.ps1"
+if (-not $NoNextStepHint) {
+    Write-Host ""
+    Write-Host "下一步（管理员 PowerShell）：" -ForegroundColor Yellow
+    Write-Host ".\\scripts\\install-dev-msix.ps1"
+}
